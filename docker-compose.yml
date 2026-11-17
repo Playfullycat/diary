@@ -2,7 +2,7 @@ services:
   diary:
     # GitHub 上自动构建好的镜像，支持 x86-64 和 ARM64
     image: ghcr.io/playfullycat/diary:latest
-    container_name: english-diary
+    container_name: diary
     restart: unless-stopped
     ports:
       - "3000:3000"
