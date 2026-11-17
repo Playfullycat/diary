@@ -1,0 +1,13 @@
+services:
+  diary:
+    build: .
+    container_name: english-diary
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # 决定"今天"是哪一天，以及每天几点自动备份
+      TZ: Asia/Shanghai
+    volumes:
+      # 数据库和本地备份都在这里：./data/diary.db 和 ./data/backups/
+      - ./data:/data
