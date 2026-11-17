@@ -21,6 +21,7 @@ ENV NODE_ENV=production \
     TZ=Asia/Shanghai
 COPY --from=build /app/.next/standalone ./
 COPY --from=build /app/.next/static ./.next/static
+COPY --from=build /app/public ./public
 VOLUME /data
 EXPOSE 3000
 CMD ["node", "server.js"]
