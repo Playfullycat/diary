@@ -99,3 +99,7 @@ npm install
 ```bash
 npm run dev
 ```
+
+## 许可证
+
+[MIT](LICENSE)
