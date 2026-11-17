@@ -4,9 +4,17 @@
 
 ## 部署
 
+不用下载源码，也不用自己编译。在服务器上新建一个目录，把 `docker-compose.yml` 下载进去，然后启动：
+
 ```bash
-docker compose up -d --build
+curl -O https://raw.githubusercontent.com/Playfullycat/diary/main/docker-compose.yml
 ```
+
+```bash
+docker compose up -d
+```
+
+镜像是 GitHub 自动构建的 `ghcr.io/playfullycat/diary:latest`，支持 x86-64 和 ARM64。
 
 打开 `http://服务器地址:3000`，第一次访问会让你设置登录密码。
 
@@ -15,7 +23,21 @@ docker compose up -d --build
 - `data/diary.db`：数据库
 - `data/backups/`：本地自动备份
 
-升级时重新执行上面的命令即可，`./data` 不会被动到。
+升级到最新版，`./data` 不会被动到：
+
+```bash
+docker compose pull
+```
+
+```bash
+docker compose up -d
+```
+
+想用自己改过的源码，在源码目录里先构建同名镜像，再启动：
+
+```bash
+docker build -t ghcr.io/playfullycat/diary:latest .
+```
 
 如果部署在公网，建议在前面加一层 HTTPS 反向代理（Nginx、Caddy 等）。
 
