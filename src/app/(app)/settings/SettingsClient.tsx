@@ -1,7 +1,8 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/client';
+import { addPasskey, passkeySupported, type PasskeyView } from '@/lib/passkey-client';
 import { AI_PRESETS, LEVELS, levelLabel, type LevelInfo } from '@/lib/shared';
 
 interface Log {
@@ -26,6 +27,7 @@ interface Props {
   level: LevelInfo;
   initialLogs: Log[];
   initialHealth: Health;
+  initialPasskeys: PasskeyView[];
 }
 
 interface RemoteFile {
@@ -47,7 +49,7 @@ function Notice({ msg }: { msg: Msg }) {
 const time = (t: string | null) => (t ? new Date(t).toLocaleString('zh-CN') : '还没有');
 const kb = (n: number) => (n > 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
 
-export default function SettingsClient({ initial, level, initialLogs, initialHealth }: Props) {
+export default function SettingsClient({ initial, level, initialLogs, initialHealth, initialPasskeys }: Props) {
   const str = (k: string) => String(initial[k] ?? '');
   const [ai, setAi] = useState({
     ai_preset: str('ai_preset'),
@@ -80,6 +82,11 @@ export default function SettingsClient({ initial, level, initialLogs, initialHea
   const [davSaved, setDavSaved] = useState(!!str('webdav_url'));
   const [remote, setRemote] = useState<RemoteFile[] | null>(null);
   const [remotePick, setRemotePick] = useState('');
+  const [passkeys, setPasskeys] = useState(initialPasskeys);
+  const [passkeyName, setPasskeyName] = useState('');
+  // null 表示还没检测（服务端渲染时不知道浏览器支不支持）
+  const [passkeyOk, setPasskeyOk] = useState<boolean | null>(null);
+  useEffect(() => setPasskeyOk(passkeySupported()), []);
 
   const preset = AI_PRESETS.find((p) => p.id === ai.ai_preset) ?? AI_PRESETS[AI_PRESETS.length - 1];
 
@@ -180,6 +187,21 @@ export default function SettingsClient({ initial, level, initialLogs, initialHea
       const out = await api<{ message: string }>('/api/backup', form);
       if (fileRef.current) fileRef.current.value = '';
       return out.message;
+    });
+
+  const newPasskey = () =>
+    act('passkey', 'addPasskey', async () => {
+      setPasskeys(await addPasskey(passkeyName));
+      setPasskeyName('');
+      return '通行密钥已添加，下次可以在登录页直接用它登录。';
+    });
+
+  const removePasskey = (p: PasskeyView) =>
+    act('passkey', 'removePasskey', async () => {
+      if (!confirm(`删除通行密钥"${p.name}"？删除后它不能再用来登录本站。`)) throw new Error('已取消');
+      const out = await api<{ passkeys: PasskeyView[] }>(`/api/passkey?id=${encodeURIComponent(p.id)}`, undefined, 'DELETE');
+      setPasskeys(out.passkeys);
+      return '已删除。设备或密码管理器里保存的那一份需要你自己在那边删掉。';
     });
 
   const changePw = () =>
@@ -387,6 +409,39 @@ export default function SettingsClient({ initial, level, initialLogs, initialHea
           <button className="danger" onClick={doRestore} disabled={!!busy}>{busy === 'restore' ? '恢复中…' : '恢复'}</button>
         </div>
         <Notice msg={msg.restore ?? null} />
+      </section>
+
+      <section className="card" id="passkey">
+        <h2>通行密钥</h2>
+        <p className="muted small">
+          用指纹、面容、设备 PIN 或密码管理器登录，不用输密码。密码登录仍然保留。通行密钥和添加时的网址绑定，换了域名需要重新添加。
+        </p>
+        {passkeys.length > 0 && (
+          <ul className="passkeys">
+            {passkeys.map((p) => (
+              <li key={p.id}>
+                <div>
+                  <strong>{p.name}</strong>
+                  <div className="muted small">
+                    {p.host} · 添加于 {time(p.created_at)} · {p.last_used_at ? `上次使用 ${time(p.last_used_at)}` : '还没用过'}
+                  </div>
+                </div>
+                <button className="ghost" onClick={() => removePasskey(p)} disabled={!!busy}>删除</button>
+              </li>
+            ))}
+          </ul>
+        )}
+        {passkeyOk === false ? (
+          <div className="banner warn" role="status">
+            现在的访问方式不能添加通行密钥：浏览器只在 HTTPS 网址（或本机 localhost）下提供这个功能。给本站配好 HTTPS 域名后再来添加。
+          </div>
+        ) : (
+          <div className="row">
+            <input type="text" value={passkeyName} onChange={(e) => setPasskeyName(e.target.value)} placeholder="起个名字，比如：我的手机（可不填）" maxLength={40} style={{ maxWidth: 300 }} aria-label="通行密钥名称" />
+            <button className="primary" onClick={newPasskey} disabled={!!busy || !passkeyOk}>{busy === 'addPasskey' ? '等待设备确认…' : '添加通行密钥'}</button>
+          </div>
+        )}
+        <Notice msg={msg.passkey ?? null} />
       </section>
 
       <section className="card">

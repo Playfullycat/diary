@@ -90,6 +90,18 @@ CREATE TABLE IF NOT EXISTS reading (
   updated_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS passkeys (
+  id TEXT PRIMARY KEY,
+  public_key TEXT NOT NULL,
+  counter INTEGER NOT NULL DEFAULT 0,
+  transports TEXT NOT NULL DEFAULT '[]',
+  name TEXT NOT NULL DEFAULT '',
+  rp_id TEXT NOT NULL,
+  origin TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  last_used_at TEXT
+);
+
 CREATE TABLE IF NOT EXISTS backup_log (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   created_at TEXT NOT NULL,

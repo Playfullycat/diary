@@ -313,3 +313,6 @@ input.q-fill { max-width: 280px; font-family: var(--en); font-size: 16px; }
 .book-title { font-family: var(--en); font-size: 18px; font-weight: 700; line-height: 1.35; overflow-wrap: anywhere; }
 .book p { flex: 1; margin-bottom: 8px; }
 .book-actions { gap: 6px; }
+
+.passkeys { list-style: none; margin: 0 0 14px; padding: 0; }
+.passkeys li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }

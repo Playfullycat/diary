@@ -1,13 +1,29 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '@/lib/client';
+import { loginWithPasskey, passkeySupported } from '@/lib/passkey-client';
 
-export default function LoginForm({ setup }: { setup: boolean }) {
+export default function LoginForm({ setup, passkey }: { setup: boolean; passkey: boolean }) {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [canPasskey, setCanPasskey] = useState(false);
+
+  useEffect(() => setCanPasskey(passkey && passkeySupported()), [passkey]);
+
+  async function usePasskey() {
+    setError('');
+    setBusy(true);
+    try {
+      await loginWithPasskey();
+      window.location.href = '/';
+    } catch (err) {
+      setError((err as Error).message);
+      setBusy(false);
+    }
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -51,6 +67,11 @@ export default function LoginForm({ setup }: { setup: boolean }) {
       <button className="primary" type="submit" disabled={busy} style={{ width: '100%' }}>
         {busy ? '请稍候…' : setup ? '设置密码并进入' : '登录'}
       </button>
+      {canPasskey && (
+        <button type="button" onClick={usePasskey} disabled={busy} style={{ width: '100%', marginTop: 10 }}>
+          用通行密钥登录
+        </button>
+      )}
     </form>
   );
 }
